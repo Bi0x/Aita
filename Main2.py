@@ -1,8 +1,6 @@
 #! /usr/bin/python3
-from sklearn.cluster import KMeans
-import re
-
 from WordAnalyser import WordAnalyser
+import re
 
 # ! Trainer Definition
 class Trainer:
@@ -12,6 +10,7 @@ class Trainer:
     # ? answers_main     ->      每个人的回答的文字内容
     # ? answers_len      ->      每个人的回答的文字内容的长度
     # ? 训练因子选择：[字数, 关键词统计]
+
     def __init__(self):
         super().__init__()
         self.answers_chunk = self.train_file_reader()
@@ -60,13 +59,12 @@ class Trainer:
             answers_len.append(len(answer))
         return answers_len
 
-
 # ! Trainer Definition End
 
-def train(self):
+def train():
     trainer = Trainer()
-
-    trainer.keyword_analyse(trainer.answers_main)
+    word_analyser = WordAnalyser()
+    print(word_analyser.keyword_analyse(trainer.answers_main))
 
 if __name__ == '__main__':
     # show_question_name()

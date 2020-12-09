@@ -1,6 +1,8 @@
 #! /usr/bin/python3
 import csv
-import jieba, collections
+import jieba, collections, logging
+
+jieba.setLogLevel(logging.INFO)
 
 class WordAnalyser:
 
@@ -44,8 +46,8 @@ class WordAnalyser:
                 if i not in remove_words:
                     word_objects.append(i)
         word_counts = collections.Counter(word_objects)
-        word_counts_top10 = word_counts.most_common(50)
-        print(word_counts_top10)
+        word_counts_tops = word_counts.most_common(30)
+        return word_counts_tops
 
 if __name__ == '__main__':
     word_analyser = WordAnalyser()
