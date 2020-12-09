@@ -2,7 +2,8 @@
 from ast import Num
 from os import fpathconf
 from WordAnalyser import WordAnalyser
-from sklearn.cluster import KMeans
+from sklearn.ensemble import RandomForestRegressor
+import matplotlib.pyplot as plt
 import re
 
 # ! Trainer Definition
@@ -83,7 +84,7 @@ class Aita:
             per_line.extend(self.answers_keywordcount[i])
             train_data.append(per_line)
         print("------>>> 正在训练模型 <<<------")
-        clf = KMeans(n_clusters = 20)
+        clf = RandomForestRegressor(max_depth=10, n_estimators=1000, min_samples_split=2)
         #print(len(train_data[0]))
         #print(self.answers_score)
         clf.fit(train_data, self.answers_score)
