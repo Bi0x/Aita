@@ -26,7 +26,7 @@ class WordAnalyser:
             u'to',     u'\t',   u'一个',    u'将',      u'到',
             u'“',      u'”',    u'不',      u'地',      u'in',
             u'于',     u'还',   u'我',      u'人',      u'为',
-            u'更',
+            u'更',     u'就',
         ]
         fp = open('./assets/remove_words.csv', 'w')
         csv_saver = csv.writer(fp)
@@ -46,7 +46,8 @@ class WordAnalyser:
                 if i not in remove_words:
                     word_objects.append(i)
         word_counts = collections.Counter(word_objects)
-        word_counts_tops = word_counts.most_common(30)
+        word_counts_tops = word_counts.most_common(10)
+        print(word_counts_tops)
         return word_counts_tops
 
 if __name__ == '__main__':

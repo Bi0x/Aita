@@ -1,10 +1,7 @@
 #! /usr/bin/python3
-from ast import Num
-from os import fpathconf
 from WordAnalyser import WordAnalyser
 from sklearn.ensemble import RandomForestRegressor
-import matplotlib.pyplot as plt
-import re
+import re, math
 
 # ! Trainer Definition
 class Aita:
@@ -85,14 +82,12 @@ class Aita:
             train_data.append(per_line)
         print("------>>> 正在训练模型 <<<------")
         clf = RandomForestRegressor(max_depth=10, n_estimators=1000, min_samples_split=2)
-        #print(len(train_data[0]))
-        #print(self.answers_score)
         clf.fit(train_data, self.answers_score)
         self.classifier = clf
         print("------>>> 训练模型结束 <<<------")
     
     def predict(self, predict_answers):
-        print("------>>> 预测结果如下 <<<------")
+        #print("------>>> 预测结果如下 <<<------")
         predict_keywords_count = self.get_keyword_counts(self.top_words, [predict_answers])
         predict_data = self.get_answers_len([predict_answers])
         predict_data.extend(predict_keywords_count[0])
@@ -104,49 +99,24 @@ class Aita:
 def run():
     aita = Aita()
     aita.main_trainer()
-    pd = '''
-    无人驾驶的公共汽车：可规划路线、自动售票、自动行驶。
-    使用价值：各城市公交。现车辆的驾驶都需靠人来操作，在未来车辆驾驶可靠人工智能完成，这可避免人类身体素质疲劳、走神等缺点，优化车辆行驶性能。还可改变现在公交行驶路线短的缺点，增长行驶路线，缩短发车时间，可以得到更大的收益。在机器控制下的车辆有更精准的发车时间和到站时间，误差减小给居民生活带来更多便利。国家投入这种车辆的引进，今后的生活将更加简易。
-    '''
-    predict_res = aita.predict(pd)
-    print("此回答的预估分数: " + str(predict_res) + " 分")
-
-    pd2 = '''
-    应用的想法：
-    与安防结合，在监控系统中融入人脸识别、车辆分析等，提取有效信息。
-    在公安系统中可以分析犯罪嫌疑人的线索，为警察办案提供有效的帮助。
-    在社区门禁系统中也可以基于人脸识别来做人员甄别。
-    商业价值：
-    社区安保、公安、交通安全、学校安保等需要用到监控的领域都可以涉及。
-    '''
-    predict_res = aita.predict(pd2)
-    print("此回答的预估分数: " + str(predict_res) + " 分")
-
-    pd3 = '''
-    AI产品：扫地机器人
-
-    商业价值：
-    扫地机器人是一个巨大、前景大好的市场，它占据智能家居场景，较有商业潜力。
-    产品的消费群体大多数为中老年，一般情况下也是用于打扫卫生，而且随着人口老龄化趋势的增长，
-    对智能家居的需求也会不断增加，加之年轻人对新兴AI产品的猎奇心理，该AI产品市场能保持平稳增长。
-    而且扫地机器人的价值不仅在于让人们摆脱家庭清洁劳务，更是推动了智能家居的发展，
-    使得越来越多的AI产品被研发出来，投入生产
-    '''
-    predict_res = aita.predict(pd3)
-    print("此回答的预估分数: " + str(predict_res) + " 分")
-
-    '''
-    预估结果：
-    9分
-    8分
-    6.5分
-    '''
-
-
-    #fp = open('./assets/answer.txt')
-    #predict_answer = fp.readlines()
-    #predict_res = aita.predict(''.join(predict_answer[2:]))
-    #print("此回答的预估分数: " + str(predict_res[0]) + " 分")
+    #predict_res = aita.predict('产品产品农村农村农村农村情况情况情况情况产品产品产品产品产品产品产品产品产品产品产品产品产品产品AIAIAIAIAIAIAIAIAIAIAIAIAIAIAI数据数据数据数据数据数据数据数据')
+    #print(predict_res)
+    predict_chunk = aita.file_reader("./assets/marked_answers2_simple.txt")
+    predict_true_score = aita.get_total_score(predict_chunk)
+    predict_main = aita.get_answers_main(predict_chunk)
+    mean_diff = 0
+    rss = 0
+    for i in range(len(predict_main)):
+        predict_res = aita.predict(predict_main[i])
+        print("\n----------------------------")
+        print("预测结果: " + str(predict_res))
+        print("实际结果: " + str(predict_true_score[i]))
+        print("----------------------------")
+        rss += (predict_true_score[i] - predict_res) ** 2
+        mean_diff += abs(predict_true_score[i] - predict_res)
+    mse = rss / len(predict_main)
+    print("平均误差: " + str(mean_diff / len(predict_main)))
+    print("MSE: " + str(mse))
 
 if __name__ == '__main__':
     run()
