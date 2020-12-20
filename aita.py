@@ -1,7 +1,8 @@
 #! /usr/bin/python3
 from WordAnalyser import WordAnalyser
 from sklearn.ensemble import RandomForestRegressor
-import re, math
+import joblib
+import re, argparse
 
 # ! Trainer Definition
 class Aita:
@@ -18,13 +19,11 @@ class Aita:
         super().__init__()
         word_analyser = WordAnalyser()
         self.show_question_name()
-        self.answers_chunk          =   self.file_reader('./assets/marked_answers.txt')
-        self.answers_score          =   self.get_total_score(self.answers_chunk)
+        self.answers_chunk          =   self.file_reader_withscore('./assets/marked_answers.txt')
         self.answers_main           =   self.get_answers_main(self.answers_chunk)
-        self.answers_len            =   self.get_answers_len(self.answers_chunk)
         self.top_words              =   word_analyser.keyword_analyse(self.answers_main)
-        self.answers_keywordcount   =   self.get_keyword_counts(self.top_words, self.answers_main)
         self.classifier             =   None
+
 
     def show_question_name(self):
         # ? 显示问题
@@ -32,11 +31,19 @@ class Aita:
         print("针对的问题：《" + fp.readline()[:-1] + "》")
         fp.close()
 
+    def file_reader_withscore(self, path):
+        # ? 读取答案数据，并将答案分组
+        train_file = open(path)
+        file_text = "".join(train_file.readlines())
+        regex_pattern = r'((\d{12}.*?#Total: *?\d\.*\d*/10))'
+        reg = re.compile(regex_pattern, re.DOTALL)
+        return reg.findall(file_text)
+
     def file_reader(self, path):
         # ? 读取答案数据，并将答案分组
         train_file = open(path)
         file_text = "".join(train_file.readlines())
-        regex_pattern = r'(\d{12}.*?#Total: *?\d\.*\d*/10)'
+        regex_pattern = r'(\d{12}([^@#]*)?)'
         reg = re.compile(regex_pattern, re.DOTALL)
         return reg.findall(file_text)
 
@@ -46,16 +53,16 @@ class Aita:
         regex_pattern = r'#Total: *?(\d\.*\d*)/10'
         reg = re.compile(regex_pattern, re.DOTALL)
         for answer in answers:
-            total_score.append(float(reg.findall(answer)[0]))
+            total_score.append(float(reg.findall(answer[0])[0]))
         return total_score
 
     def get_answers_main(self, answers):
         # ? 获取主要回答内容
         answers_main = []
-        regex_pattern = r':\d\d\n(.*)?#Marking Scheme'
+        regex_pattern = r':\d\d\n(.*)'
         reg = re.compile(regex_pattern, re.DOTALL)
         for answer in answers:
-            answers_main.append(reg.findall(answer)[0])
+            answers_main.append(reg.findall(answer[0])[0])
         return answers_main
 
     def get_answers_len(self, answers):
@@ -75,6 +82,9 @@ class Aita:
         return keyword_counts
 
     def main_trainer(self):
+        self.answers_score          =   self.get_total_score(self.answers_chunk)
+        self.answers_len            =   self.get_answers_len(self.answers_chunk)
+        self.answers_keywordcount   =   self.get_keyword_counts(self.top_words, self.answers_main)
         train_data = []
         for i in range(len(self.answers_main)):
             per_line = [self.answers_len[i]]
@@ -96,12 +106,10 @@ class Aita:
 
 # ! Trainer Definition End
 
-def run():
+def test(path):
     aita = Aita()
-    aita.main_trainer()
-    #predict_res = aita.predict('产品产品农村农村农村农村情况情况情况情况产品产品产品产品产品产品产品产品产品产品产品产品产品产品AIAIAIAIAIAIAIAIAIAIAIAIAIAIAI数据数据数据数据数据数据数据数据')
-    #print(predict_res)
-    predict_chunk = aita.file_reader("./assets/marked_answers2_simple.txt")
+    aita.classifier = joblib.load('Aita.model')
+    predict_chunk = aita.file_reader_withscore(path)
     predict_true_score = aita.get_total_score(predict_chunk)
     predict_main = aita.get_answers_main(predict_chunk)
     mean_diff = 0
@@ -118,6 +126,39 @@ def run():
     print("平均误差: " + str(mean_diff / len(predict_main)))
     print("MSE: " + str(mse))
 
+def train():
+    global aita
+    aita = Aita()
+    aita.main_trainer()
+    joblib.dump(aita.classifier, 'Aita.model')
+    fp = open('./assets/ModelParameters.txt', 'w')
+    fp.write("max_depth=10\nn_estimators=1000\nmin_samples_split=2")
+    fp.close()
+
+def run(path):
+    global aita
+    aita = Aita()
+    aita.classifier = joblib.load('Aita.model')
+    predict_chunk = aita.file_reader(path)
+    predict_main = aita.get_answers_main(predict_chunk)
+    for i in range(len(predict_main)):
+        predict_res = aita.predict(predict_main[i])
+        print("\n----------------------------")
+        print("预测结果: " + str(predict_res))
+        print("----------------------------")
+
 if __name__ == '__main__':
-    run()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-train", help="训练模型", action="store_true")
+    parser.add_argument("-predict", help="-train filename.txt")
+    parser.add_argument("-test", help="测试模型", action="store_true")
+
+    args = parser.parse_args()
+    if args.train:
+        train()
+    elif args.predict:
+        run(args.predict)
+    elif args.test:
+        test("assets/marked_answers2_simple.txt")
+    #run()
     
