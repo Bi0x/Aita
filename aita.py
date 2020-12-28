@@ -1,10 +1,15 @@
 #! /usr/bin/python3
 from WordAnalyser import WordAnalyser
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, AdaBoostClassifier
 import joblib
-import re, argparse
+import re
+import argparse
+import matplotlib.pyplot as plt
+import sklearn.svm as svm
 
 # ! Trainer Definition
+
+
 class Aita:
 
     # ? answers_chunk           ->      每个人的回答与评分整体内容
@@ -19,11 +24,11 @@ class Aita:
         super().__init__()
         word_analyser = WordAnalyser()
         self.show_question_name()
-        self.answers_chunk          =   self.file_reader_withscore('./assets/marked_answers.txt')
-        self.answers_main           =   self.get_answers_main(self.answers_chunk)
-        self.top_words              =   word_analyser.keyword_analyse(self.answers_main)
-        self.classifier             =   None
-
+        self.answers_chunk = self.file_reader_withscore(
+            './assets/marked_answers.txt')
+        self.answers_main = self.get_answers_main(self.answers_chunk)
+        self.top_words = word_analyser.keyword_analyse(self.answers_main)
+        self.classifier = None
 
     def show_question_name(self):
         # ? 显示问题
@@ -59,7 +64,7 @@ class Aita:
     def get_answers_main(self, answers):
         # ? 获取主要回答内容
         answers_main = []
-        regex_pattern = r':\d\d\n(.*)'
+        regex_pattern = r':\d\d\n([^@#]*)?'
         reg = re.compile(regex_pattern, re.DOTALL)
         for answer in answers:
             answers_main.append(reg.findall(answer[0])[0])
@@ -82,23 +87,45 @@ class Aita:
         return keyword_counts
 
     def main_trainer(self):
-        self.answers_score          =   self.get_total_score(self.answers_chunk)
-        self.answers_len            =   self.get_answers_len(self.answers_chunk)
-        self.answers_keywordcount   =   self.get_keyword_counts(self.top_words, self.answers_main)
+        self.answers_score = self.get_total_score(self.answers_chunk)
+        self.answers_len = self.get_answers_len(self.answers_chunk)
+        self.answers_keywordcount = self.get_keyword_counts(
+            self.top_words, self.answers_main)
         train_data = []
+
         for i in range(len(self.answers_main)):
             per_line = [self.answers_len[i]]
             per_line.extend(self.answers_keywordcount[i])
             train_data.append(per_line)
         print("------>>> 正在训练模型 <<<------")
-        clf = RandomForestRegressor(max_depth=10, n_estimators=1000, min_samples_split=2)
+        clf = RandomForestRegressor(
+            n_estimators=600,
+            max_depth=13,
+            min_samples_split=2,
+            min_samples_leaf=5,
+            max_features=7,
+            oob_score=True,
+            random_state=10
+        )
+        #clf= svm.NuSVR(nu = 0.5)
         clf.fit(train_data, self.answers_score)
+        # ? 这一块是处理重要性的
+        impt = []
+        for i in range(len(self.top_words)):
+            impt.append([self.top_words[i][0], clf.feature_importances_[i]])
+            #print("(" + self.top_words[i][0] + ")   \t重要性: " + str(clf.feature_importances_[i]))
+        impt.sort(key=lambda x: x[1], reverse=True)
+        for i in range(len(impt)):
+            print("(" + impt[i][0] + ")   \t重要性: " + str(impt[i][1]))
+        # ? 保存模型
         self.classifier = clf
+        print("----------------------------")
         print("------>>> 训练模型结束 <<<------")
-    
+
     def predict(self, predict_answers):
         #print("------>>> 预测结果如下 <<<------")
-        predict_keywords_count = self.get_keyword_counts(self.top_words, [predict_answers])
+        predict_keywords_count = self.get_keyword_counts(
+            self.top_words, [predict_answers])
         predict_data = self.get_answers_len([predict_answers])
         predict_data.extend(predict_keywords_count[0])
         return self.classifier.predict([predict_data])[0]
@@ -106,37 +133,61 @@ class Aita:
 
 # ! Trainer Definition End
 
-def test(path):
+def test():
+    # ? 测试模型，使用自带的回答
     aita = Aita()
     aita.classifier = joblib.load('Aita.model')
-    predict_chunk = aita.file_reader_withscore(path)
+    predict_chunk = aita.file_reader_withscore(
+        "assets/marked_answers2_simple.txt")
     predict_true_score = aita.get_total_score(predict_chunk)
     predict_main = aita.get_answers_main(predict_chunk)
     mean_diff = 0
     rss = 0
+    resi = []
     for i in range(len(predict_main)):
         predict_res = aita.predict(predict_main[i])
-        print("\n----------------------------")
-        print("预测结果: " + str(predict_res))
-        print("实际结果: " + str(predict_true_score[i]))
-        print("----------------------------")
+        # print("\n----------------------------")
+        # print("预测结果: " + str(predict_res))
+        # print("实际结果: " + str(predict_true_score[i]))
+        # print("----------------------------")
+        resi.append((predict_true_score[i] - predict_res))
         rss += (predict_true_score[i] - predict_res) ** 2
         mean_diff += abs(predict_true_score[i] - predict_res)
     mse = rss / len(predict_main)
     print("平均误差: " + str(mean_diff / len(predict_main)))
     print("MSE: " + str(mse))
+    # 下面都是画图的
+    '''
+    figure, axes=plt.subplots() #得到画板、轴
+    axes.boxplot(resi, patch_artist=True) #描点上色
+    plt.show()
+    
+    plt.plot([x for x in range(len(predict_main))], resi, marker='o', color='red')
+    plt.rcParams['font.sans-serif'] = ['PingFang HK']
+    plt.rcParams['axes.unicode_minus'] = False
+    plt.title("预测结果",fontsize=14)
+    plt.xlabel("回答编号",fontsize=14)
+    plt.ylabel("误差^2", fontsize=14)
+    plt.gca().xaxis.set_major_locator(plt.MultipleLocator(1))
+    plt.gcf().set_size_inches(15, 7)
+    plt.show()
+    '''
+
 
 def train():
-    global aita
+    # ? 训练模型
     aita = Aita()
     aita.main_trainer()
+    print("------>>> 正在保存模型 <<<------")
     joblib.dump(aita.classifier, 'Aita.model')
     fp = open('./assets/ModelParameters.txt', 'w')
     fp.write("max_depth=10\nn_estimators=1000\nmin_samples_split=2")
     fp.close()
+    print("------>>> 保存模型结束 <<<------")
+
 
 def run(path):
-    global aita
+    # ? 预测数据
     aita = Aita()
     aita.classifier = joblib.load('Aita.model')
     predict_chunk = aita.file_reader(path)
@@ -147,6 +198,7 @@ def run(path):
         print("预测结果: " + str(predict_res))
         print("----------------------------")
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-train", help="训练模型", action="store_true")
@@ -154,11 +206,14 @@ if __name__ == '__main__':
     parser.add_argument("-test", help="测试模型", action="store_true")
 
     args = parser.parse_args()
+
     if args.train:
         train()
     elif args.predict:
         run(args.predict)
     elif args.test:
-        test("assets/marked_answers2_simple.txt")
-    #run()
-    
+        test()
+    else:
+        train()
+        test()
+    # run()
