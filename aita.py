@@ -99,13 +99,12 @@ class Aita:
             train_data.append(per_line)
         print("------>>> 正在训练模型 <<<------")
         clf = RandomForestRegressor(
-            n_estimators=100,
-            max_depth=8,
-            min_samples_split=2,
-            min_samples_leaf=6,
-            max_features=7,
-            oob_score=True,
-            random_state=10
+            n_estimators=100,       # 子树数量
+            max_depth=8,            # 最大深度
+            min_samples_leaf=6,     # 叶节点最小样本数
+            max_features=7,         # 节点分裂时参与判断的最大特征数
+            oob_score=True,         # 使用袋外样品进行估算泛化精度
+            random_state=10         # 随机数种子
         )
         #clf= svm.NuSVR(nu = 0.5)
         clf.fit(train_data, self.answers_score)
