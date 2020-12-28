@@ -99,10 +99,10 @@ class Aita:
             train_data.append(per_line)
         print("------>>> 正在训练模型 <<<------")
         clf = RandomForestRegressor(
-            n_estimators=600,
-            max_depth=13,
+            n_estimators=100,
+            max_depth=8,
             min_samples_split=2,
-            min_samples_leaf=5,
+            min_samples_leaf=6,
             max_features=7,
             oob_score=True,
             random_state=10

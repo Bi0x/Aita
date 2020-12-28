@@ -37,7 +37,7 @@ class WordAnalyser:
         #     u'你',          u'可以',        u'通常',        u'如果',    u'我们',
         #     u'并',          u'需要',        u'和',          u'是',      u'随着',
         #     u'对于',        u'对',          u'等',          u'能',      u'都',
-        #     u'会',          u'也',          u'以及',        u'可',      
+        #     u'会',          u'也',          u'以及',        u'可',      u'to'
         # ])
         # 是数字的
         # remove_words.extend([
