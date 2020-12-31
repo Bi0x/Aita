@@ -107,7 +107,22 @@ class Aita:
             oob_score=True,         # 使用袋外样品进行估算泛化精度
             random_state=10         # 随机数种子
         )
-        #clf= svm.NuSVR(nu = 0.5)
+
+        # Use OOB to select best max_depth and best number of bootstrap samples
+        best_depth = 1
+        best_oob_score = 1
+        best_B = 100
+        for i in range(1,12):
+            for B in range(100, 550, 50):
+                clf = RandomForestRegressor(n_estimators=B, max_depth=i, oob_score=True, random_state=0)
+                clf.fit(train_data, self.answers_score)
+                print(clf.oob_score_)
+                if clf.oob_score_ > 0 and clf.oob_score_ < best_oob_score:
+                    best_oob_score = clf.oob_score_
+                    best_depth = i
+                    best_B = B
+        print('Best max_depth: %d and best B: %d' % (best_depth, best_B))
+        clf = RandomForestRegressor(n_estimators=best_B, max_depth=best_depth, oob_score=True, random_state=0)
         clf.fit(train_data, self.answers_score)
         # ? 这一块是处理重要性的
         variable_importance = [('answer.length', clf.feature_importances_[0])] # answer.length is the first predictor variable
