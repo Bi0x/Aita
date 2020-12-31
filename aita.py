@@ -6,6 +6,7 @@ import joblib
 import re
 import argparse
 import sklearn.svm as svm
+import numpy as np
 
 # ! Trainer Definition
 
@@ -142,6 +143,7 @@ def test():
     total_absolute_diff = 0
     rss = 0
     residuals = []
+    pred_val = [] # save predicted values for computing quantiles
     print('No\tTrue value\tPredicted Value\tDifference')
     for i in range(len(predict_main)):
         predict_res = aita.predict(predict_main[i])
@@ -149,10 +151,16 @@ def test():
         residuals.append((predict_true_score[i] - predict_res))
         rss += (predict_true_score[i] - predict_res) ** 2
         total_absolute_diff += abs(predict_true_score[i] - predict_res)
+        pred_val.append(predict_res)
     mse = rss / len(predict_main)
     print("平均绝对误差: %4.5f" % (total_absolute_diff / len(predict_main)))
     print("Mean Squared Error (MSE): %4.5f" % (mse))
-
+    print(' 5th quantile: %4.2f' % (np.quantile(pred_val, 0.05)))    
+    print('25th quantile: %4.2f' % (np.quantile(pred_val, 0.25)))
+    print('50th quantile: %4.2f' % (np.quantile(pred_val, 0.50)))
+    print('75th quantile: %4.2f' % (np.quantile(pred_val, 0.75)))    
+    print('95th quantile: %4.2f' % (np.quantile(pred_val, 0.95)))
+    
     # 下面都是画图的
     '''
     figure, axes=plt.subplots() #得到画板、轴
