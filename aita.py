@@ -113,7 +113,7 @@ class Aita:
         best_oob_score = 1
         best_B = 100
         for i in range(1,12):
-            for B in range(100, 550, 50):
+            for B in range(50, 550, 10):
                 clf = RandomForestRegressor(n_estimators=B, max_depth=i, oob_score=True, random_state=0)
                 clf.fit(train_data, self.answers_score)
                 print(clf.oob_score_)
