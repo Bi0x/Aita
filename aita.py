@@ -89,7 +89,7 @@ class Aita:
 
     def main_trainer(self):
         self.answers_score = self.get_total_score(self.answers_chunk)
-        self.answers_len = self.get_answers_len(self.answers_chunk)
+        self.answers_len = self.get_answers_len(self.answers_main)
         self.answers_keywordcount = self.get_keyword_counts(
             self.top_words, self.answers_main)
         train_data = []
