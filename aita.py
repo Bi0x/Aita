@@ -1,10 +1,10 @@
 #! /usr/bin/python3
+
 from WordAnalyser import WordAnalyser
 from sklearn.ensemble import RandomForestRegressor, AdaBoostClassifier
 import joblib
 import re
 import argparse
-import matplotlib.pyplot as plt
 import sklearn.svm as svm
 
 # ! Trainer Definition
@@ -155,6 +155,7 @@ def test():
     mse = rss / len(predict_main)
     print("平均误差: " + str(mean_diff / len(predict_main)))
     print("MSE: " + str(mse))
+
     # 下面都是画图的
     '''
     figure, axes=plt.subplots() #得到画板、轴
