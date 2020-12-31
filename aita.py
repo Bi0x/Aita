@@ -109,13 +109,13 @@ class Aita:
         #clf= svm.NuSVR(nu = 0.5)
         clf.fit(train_data, self.answers_score)
         # ? 这一块是处理重要性的
-        impt = []
+        variable_importance = []
         for i in range(len(self.top_words)):
-            impt.append([self.top_words[i][0], clf.feature_importances_[i]])
+            variable_importance.append([self.top_words[i][0], clf.feature_importances_[i]])
             #print("(" + self.top_words[i][0] + ")   \t重要性: " + str(clf.feature_importances_[i]))
-        impt.sort(key=lambda x: x[1], reverse=True)
-        for i in range(len(impt)):
-            print("(" + impt[i][0] + ")   \t重要性: " + str(impt[i][1]))
+        variable_importance.sort(key=lambda x: x[1], reverse=True)
+        for i in range(len(variable_importance)):
+            print("(" + variable_importance[i][0] + ")   \t重要性: " + str(variable_importance[i][1]))
         # ? 保存模型
         self.classifier = clf
         print("----------------------------")
@@ -202,7 +202,7 @@ def run(path):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-train", help="训练模型", action="store_true")
-    parser.add_argument("-predict", help="-train filename.txt")
+    parser.add_argument("-predict", help="-predict filename.txt")
     parser.add_argument("-test", help="测试模型", action="store_true")
 
     args = parser.parse_args()
