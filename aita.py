@@ -112,10 +112,9 @@ class Aita:
         variable_importance = []
         for i in range(len(self.top_words)):
             variable_importance.append([self.top_words[i][0], clf.feature_importances_[i]])
-            #print("(" + self.top_words[i][0] + ")   \t重要性: " + str(clf.feature_importances_[i]))
         variable_importance.sort(key=lambda x: x[1], reverse=True)
         for i in range(len(variable_importance)):
-            print("(" + variable_importance[i][0] + ")   \t重要性: " + str(variable_importance[i][1]))
+            print("预测变量：" + variable_importance[i][0] + "\t\t\t重要性: %4.3f" % (variable_importance[i][1]))
         # ? 保存模型
         self.classifier = clf
         print("----------------------------")
