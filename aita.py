@@ -110,9 +110,9 @@ class Aita:
         #clf= svm.NuSVR(nu = 0.5)
         clf.fit(train_data, self.answers_score)
         # ? 这一块是处理重要性的
-        variable_importance = []
+        variable_importance = [('answer.length', clf.feature_importances_[0])] # answer.length is the first predictor variable
         for i in range(len(self.top_words)):
-            variable_importance.append([self.top_words[i][0], clf.feature_importances_[i]])
+            variable_importance.append((self.top_words[i][0], clf.feature_importances_[i+1]))
         variable_importance.sort(key=lambda x: x[1], reverse=True)
         for i in range(len(variable_importance)):
             print("预测变量：" + variable_importance[i][0] + "\t\t\t重要性: %4.3f" % (variable_importance[i][1]))
