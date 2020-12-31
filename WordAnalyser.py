@@ -62,7 +62,7 @@ class WordAnalyser:
         remove_words = self.read_remove_word()
         word_objects = []
         for answer in answers:
-            word_list = jieba.cut(answer, cut_all=False)
+            word_list = jieba.cut_for_search(answer) # for jieba useage, check https://github.com/fxsjy/jieba
             for i in word_list:
                 if i not in remove_words:
                     word_objects.append(i)
