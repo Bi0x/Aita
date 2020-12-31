@@ -110,19 +110,19 @@ class Aita:
 
         # Use OOB to select best max_depth and best number of bootstrap samples
         best_depth = 1
-        best_oob_score = 1
+        best_oob_score = 0
         best_B = 100
-        for i in range(1,12):
-            for B in range(50, 550, 10):
-                clf = RandomForestRegressor(n_estimators=B, max_depth=i, oob_score=True, random_state=0)
+        for i in range(1,5):
+            for B in range(10, 2000, 10):
+                clf = RandomForestRegressor(n_estimators=B, max_depth=i, oob_score=True, random_state=0, max_samples=.5)
                 clf.fit(train_data, self.answers_score)
                 print(clf.oob_score_)
-                if clf.oob_score_ > 0 and clf.oob_score_ < best_oob_score:
+                if clf.oob_score_ > 0 and clf.oob_score_ > best_oob_score:
                     best_oob_score = clf.oob_score_
                     best_depth = i
                     best_B = B
-        print('Best max_depth: %d and best B: %d' % (best_depth, best_B))
-        clf = RandomForestRegressor(n_estimators=best_B, max_depth=best_depth, oob_score=True, random_state=0)
+        print('Best max_depth: %d, best B: %d, OOB score: %4.2f' % (best_depth, best_B, best_oob_score))
+        clf = RandomForestRegressor(n_estimators=best_B, max_depth=best_depth, oob_score=True, random_state=0, max_samples=.5)
         clf.fit(train_data, self.answers_score)
         # ? 这一块是处理重要性的
         variable_importance = [('answer.length', clf.feature_importances_[0])] # answer.length is the first predictor variable
@@ -169,7 +169,7 @@ def test():
         pred_val.append(predict_res)
     mse = rss / len(predict_main)
     print('---------------------------------------------------------------')
-    print('平均绝对误差: %4.5f' % (total_absolute_diff / len(predict_main)))
+    print('Mean Absolute Error (MAE): %4.5f' % (total_absolute_diff / len(predict_main)))
     print('Mean Squared Error (MSE): %4.5f' % (mse))
     print(' 5th quantile: %4.2f' % (np.quantile(pred_val, 0.05)))    
     print('25th quantile: %4.2f' % (np.quantile(pred_val, 0.25)))
