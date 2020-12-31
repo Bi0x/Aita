@@ -46,7 +46,7 @@ class Aita:
         return reg.findall(file_text)
 
     def file_reader(self, path):
-        # ? 读取答案数据，并将答案分组
+        # ? 读取答案数据，并将答案分组(不包括成绩信息)
         train_file = open(path)
         file_text = "".join(train_file.readlines())
         regex_pattern = r'(\d{12}([^@#]*)?)'
