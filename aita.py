@@ -142,12 +142,10 @@ def test():
     total_absolute_diff = 0
     rss = 0
     resi = []
+    print('No\tTrue value\tPredicted Value\tDifference')
     for i in range(len(predict_main)):
         predict_res = aita.predict(predict_main[i])
-        # print("\n----------------------------")
-        # print("预测结果: " + str(predict_res))
-        # print("实际结果: " + str(predict_true_score[i]))
-        # print("----------------------------")
+        print('%d\t%4.2f\t%4.2f\t%4.2f' % (i+1, predict_true_score[i], predict_res, predict_res-predict_true_score[i]))
         resi.append((predict_true_score[i] - predict_res))
         rss += (predict_true_score[i] - predict_res) ** 2
         total_absolute_diff += abs(predict_true_score[i] - predict_res)
