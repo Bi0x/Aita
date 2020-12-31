@@ -141,12 +141,12 @@ def test():
     predict_main = aita.get_answers_main(predict_chunk)
     total_absolute_diff = 0
     rss = 0
-    resi = []
+    residuals = []
     print('No\tTrue value\tPredicted Value\tDifference')
     for i in range(len(predict_main)):
         predict_res = aita.predict(predict_main[i])
         print('%d\t%4.2f\t%4.2f\t%4.2f' % (i+1, predict_true_score[i], predict_res, predict_res-predict_true_score[i]))
-        resi.append((predict_true_score[i] - predict_res))
+        residuals.append((predict_true_score[i] - predict_res))
         rss += (predict_true_score[i] - predict_res) ** 2
         total_absolute_diff += abs(predict_true_score[i] - predict_res)
     mse = rss / len(predict_main)
@@ -156,10 +156,10 @@ def test():
     # 下面都是画图的
     '''
     figure, axes=plt.subplots() #得到画板、轴
-    axes.boxplot(resi, patch_artist=True) #描点上色
+    axes.boxplot(residuals, patch_artist=True) #描点上色
     plt.show()
     
-    plt.plot([x for x in range(len(predict_main))], resi, marker='o', color='red')
+    plt.plot([x for x in range(len(predict_main))], residuals, marker='o', color='red')
     plt.rcParams['font.sans-serif'] = ['PingFang HK']
     plt.rcParams['axes.unicode_minus'] = False
     plt.title("预测结果",fontsize=14)
