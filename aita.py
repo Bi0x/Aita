@@ -139,7 +139,7 @@ def test():
         "assets/marked_answers2_simple.txt")
     predict_true_score = aita.get_total_score(predict_chunk)
     predict_main = aita.get_answers_main(predict_chunk)
-    mean_diff = 0
+    total_absolute_diff = 0
     rss = 0
     resi = []
     for i in range(len(predict_main)):
@@ -150,10 +150,10 @@ def test():
         # print("----------------------------")
         resi.append((predict_true_score[i] - predict_res))
         rss += (predict_true_score[i] - predict_res) ** 2
-        mean_diff += abs(predict_true_score[i] - predict_res)
+        total_absolute_diff += abs(predict_true_score[i] - predict_res)
     mse = rss / len(predict_main)
-    print("平均误差: " + str(mean_diff / len(predict_main)))
-    print("MSE: " + str(mse))
+    print("平均绝对误差: %4.5f" % (total_absolute_diff / len(predict_main)))
+    print("Mean Squared Error (MSE): %4.5f" % (mse))
 
     # 下面都是画图的
     '''
