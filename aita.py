@@ -112,8 +112,8 @@ class Aita:
         best_depth = 1
         best_oob_score = 0
         best_B = 100
-        for depth in range(1,31):
-            for B in range(10, 2500, 50):
+        for depth in range(1,51):
+            for B in range(10, 2500, 10):
                 clf = RandomForestRegressor(n_estimators=B, max_depth=depth, oob_score=True, max_samples=.33)
                 clf.fit(train_data, self.answers_score)
                 print(clf.oob_score_)
