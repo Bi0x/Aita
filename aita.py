@@ -112,17 +112,17 @@ class Aita:
         best_depth = 1
         best_oob_score = 0
         best_B = 100
-        for i in range(1,5):
-            for B in range(10, 2000, 10):
-                clf = RandomForestRegressor(n_estimators=B, max_depth=i, oob_score=True, random_state=0, max_samples=.5)
+        for depth in range(1,31):
+            for B in range(10, 2500, 50):
+                clf = RandomForestRegressor(n_estimators=B, max_depth=depth, oob_score=True, max_samples=.33)
                 clf.fit(train_data, self.answers_score)
                 print(clf.oob_score_)
                 if clf.oob_score_ > 0 and clf.oob_score_ > best_oob_score:
                     best_oob_score = clf.oob_score_
-                    best_depth = i
+                    best_depth = depth
                     best_B = B
         print('Best max_depth: %d, best B: %d, OOB score: %4.2f' % (best_depth, best_B, best_oob_score))
-        clf = RandomForestRegressor(n_estimators=best_B, max_depth=best_depth, oob_score=True, random_state=0, max_samples=.5)
+        clf = RandomForestRegressor(n_estimators=best_B, max_depth=best_depth, oob_score=True, max_samples=.33)
         clf.fit(train_data, self.answers_score)
         # ? 这一块是处理重要性的
         variable_importance = [('answer.length', clf.feature_importances_[0])] # answer.length is the first predictor variable
