@@ -1,11 +1,12 @@
 #! /usr/bin/python3
+
 from WordAnalyser import WordAnalyser
 from sklearn.ensemble import RandomForestRegressor, AdaBoostClassifier
 import joblib
 import re
 import argparse
-import matplotlib.pyplot as plt
 import sklearn.svm as svm
+import numpy as np
 
 # ! Trainer Definition
 
@@ -45,7 +46,7 @@ class Aita:
         return reg.findall(file_text)
 
     def file_reader(self, path):
-        # ? 读取答案数据，并将答案分组
+        # ? 读取答案数据，并将答案分组(不包括成绩信息)
         train_file = open(path)
         file_text = "".join(train_file.readlines())
         regex_pattern = r'(\d{12}([^@#]*)?)'
@@ -88,7 +89,7 @@ class Aita:
 
     def main_trainer(self):
         self.answers_score = self.get_total_score(self.answers_chunk)
-        self.answers_len = self.get_answers_len(self.answers_chunk)
+        self.answers_len = self.get_answers_len(self.answers_main)
         self.answers_keywordcount = self.get_keyword_counts(
             self.top_words, self.answers_main)
         train_data = []
@@ -97,7 +98,7 @@ class Aita:
             per_line = [self.answers_len[i]]
             per_line.extend(self.answers_keywordcount[i])
             train_data.append(per_line)
-        print("------>>> 正在训练模型 <<<------")
+        iprint('------>>> 正在训练模型 <<<------', 'result.txt')
         clf = RandomForestRegressor(
             n_estimators=100,       # 子树数量
             max_depth=8,            # 最大深度
@@ -106,23 +107,35 @@ class Aita:
             oob_score=True,         # 使用袋外样品进行估算泛化精度
             random_state=10         # 随机数种子
         )
-        #clf= svm.NuSVR(nu = 0.5)
+
+        # Use OOB to select best max_depth and best number of bootstrap samples
+        best_depth = 1
+        best_oob_score = 0
+        best_B = 100
+        for depth in range(1,51):
+            for B in range(100, 2500, 10):
+                clf = RandomForestRegressor(n_estimators=B, max_depth=depth, oob_score=True, max_features='sqrt', max_samples=.99)
+                clf.fit(train_data, self.answers_score)
+                if clf.oob_score_ > best_oob_score:
+                    best_oob_score = clf.oob_score_
+                    best_depth = depth
+                    best_B = B
+        iprint('Best max_depth: %d, best B: %d, OOB score: %4.2f' % (best_depth, best_B, best_oob_score), 'result.txt')
+        clf = RandomForestRegressor(n_estimators=best_B, max_depth=best_depth, oob_score=True, max_features='sqrt', max_samples=.99)
         clf.fit(train_data, self.answers_score)
         # ? 这一块是处理重要性的
-        impt = []
+        variable_importance = [('answer.length', clf.feature_importances_[0])] # answer.length is the first predictor variable
         for i in range(len(self.top_words)):
-            impt.append([self.top_words[i][0], clf.feature_importances_[i]])
-            #print("(" + self.top_words[i][0] + ")   \t重要性: " + str(clf.feature_importances_[i]))
-        impt.sort(key=lambda x: x[1], reverse=True)
-        for i in range(len(impt)):
-            print("(" + impt[i][0] + ")   \t重要性: " + str(impt[i][1]))
+            variable_importance.append((self.top_words[i][0], clf.feature_importances_[i+1]))
+        variable_importance.sort(key=lambda x: x[1], reverse=True)
+        for i in range(len(variable_importance)):
+            iprint('预测变量：' + variable_importance[i][0] + '\t\t\t重要性: %4.3f' % (variable_importance[i][1]), 'result.txt')
         # ? 保存模型
         self.classifier = clf
-        print("----------------------------")
-        print("------>>> 训练模型结束 <<<------")
+        iprint('----------------------------', 'result.txt')
+        iprint('------>>> 训练模型结束 <<<------', 'result.txt')
 
     def predict(self, predict_answers):
-        #print("------>>> 预测结果如下 <<<------")
         predict_keywords_count = self.get_keyword_counts(
             self.top_words, [predict_answers])
         predict_data = self.get_answers_len([predict_answers])
@@ -132,6 +145,18 @@ class Aita:
 
 # ! Trainer Definition End
 
+from datetime import datetime
+def iprint(s, fname):
+    f = open(fname, 'a')
+    curr_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+    s = '[' + curr_time + ']: ' + s
+    if not '\n' in s:
+        s += '\n'
+    f.write(s)
+    f.close()
+    print('%s' % (s.strip()))
+
+
 def test():
     # ? 测试模型，使用自带的回答
     aita = Aita()
@@ -140,28 +165,35 @@ def test():
         "assets/marked_answers2_simple.txt")
     predict_true_score = aita.get_total_score(predict_chunk)
     predict_main = aita.get_answers_main(predict_chunk)
-    mean_diff = 0
+    total_absolute_diff = 0
     rss = 0
-    resi = []
+    residuals = []
+    pred_val = [] # save predicted values for computing quantiles
+    iprint('No\tTrue value\tPredicted Value\tDifference', 'result.txt')
     for i in range(len(predict_main)):
         predict_res = aita.predict(predict_main[i])
-        # print("\n----------------------------")
-        # print("预测结果: " + str(predict_res))
-        # print("实际结果: " + str(predict_true_score[i]))
-        # print("----------------------------")
-        resi.append((predict_true_score[i] - predict_res))
+        iprint('%d\t%4.2f\t%4.2f\t%4.2f' % (i+1, predict_true_score[i], predict_res, predict_res-predict_true_score[i]), 'result.txt')
+        residuals.append((predict_true_score[i] - predict_res))
         rss += (predict_true_score[i] - predict_res) ** 2
-        mean_diff += abs(predict_true_score[i] - predict_res)
+        total_absolute_diff += abs(predict_true_score[i] - predict_res)
+        pred_val.append(predict_res)
     mse = rss / len(predict_main)
-    print("平均误差: " + str(mean_diff / len(predict_main)))
-    print("MSE: " + str(mse))
+    iprint('---------------------------------------------------------------', 'result.txt')
+    iprint('平均绝对误差: %4.5f' % (total_absolute_diff / len(predict_main)), 'result.txt')
+    iprint('Mean Squared Error (MSE): %4.5f' % (mse), 'result.txt')
+    iprint(' 5th quantile: %4.2f' % (np.quantile(pred_val, 0.05)), 'result.txt')
+    iprint('25th quantile: %4.2f' % (np.quantile(pred_val, 0.25)), 'result.txt')
+    iprint('50th quantile: %4.2f' % (np.quantile(pred_val, 0.50)), 'result.txt')
+    iprint('75th quantile: %4.2f' % (np.quantile(pred_val, 0.75)), 'result.txt')    
+    iprint('95th quantile: %4.2f' % (np.quantile(pred_val, 0.95)), 'result.txt')
+    
     # 下面都是画图的
     '''
     figure, axes=plt.subplots() #得到画板、轴
-    axes.boxplot(resi, patch_artist=True) #描点上色
+    axes.boxplot(residuals, patch_artist=True) #描点上色
     plt.show()
     
-    plt.plot([x for x in range(len(predict_main))], resi, marker='o', color='red')
+    plt.plot([x for x in range(len(predict_main))], residuals, marker='o', color='red')
     plt.rcParams['font.sans-serif'] = ['PingFang HK']
     plt.rcParams['axes.unicode_minus'] = False
     plt.title("预测结果",fontsize=14)
@@ -201,7 +233,7 @@ def run(path):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-train", help="训练模型", action="store_true")
-    parser.add_argument("-predict", help="-train filename.txt")
+    parser.add_argument("-predict", help="-predict filename.txt")
     parser.add_argument("-test", help="测试模型", action="store_true")
 
     args = parser.parse_args()
