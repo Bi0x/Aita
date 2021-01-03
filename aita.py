@@ -98,7 +98,7 @@ class Aita:
             per_line = [self.answers_len[i]]
             per_line.extend(self.answers_keywordcount[i])
             train_data.append(per_line)
-        print("------>>> 正在训练模型 <<<------")
+        iprint('------>>> 正在训练模型 <<<------', 'result.txt')
         clf = RandomForestRegressor(
             n_estimators=100,       # 子树数量
             max_depth=8,            # 最大深度
@@ -113,15 +113,14 @@ class Aita:
         best_oob_score = 0
         best_B = 100
         for depth in range(1,51):
-            for B in range(10, 2500, 10):
+            for B in range(100, 2500, 10):
                 clf = RandomForestRegressor(n_estimators=B, max_depth=depth, oob_score=True, max_samples=.33)
                 clf.fit(train_data, self.answers_score)
-                print(clf.oob_score_)
                 if clf.oob_score_ > 0 and clf.oob_score_ > best_oob_score:
                     best_oob_score = clf.oob_score_
                     best_depth = depth
                     best_B = B
-        print('Best max_depth: %d, best B: %d, OOB score: %4.2f' % (best_depth, best_B, best_oob_score))
+        iprint('Best max_depth: %d, best B: %d, OOB score: %4.2f' % (best_depth, best_B, best_oob_score), 'result.txt')
         clf = RandomForestRegressor(n_estimators=best_B, max_depth=best_depth, oob_score=True, max_samples=.33)
         clf.fit(train_data, self.answers_score)
         # ? 这一块是处理重要性的
@@ -130,14 +129,13 @@ class Aita:
             variable_importance.append((self.top_words[i][0], clf.feature_importances_[i+1]))
         variable_importance.sort(key=lambda x: x[1], reverse=True)
         for i in range(len(variable_importance)):
-            print("预测变量：" + variable_importance[i][0] + "\t\t\t重要性: %4.3f" % (variable_importance[i][1]))
+            iprint('预测变量：' + variable_importance[i][0] + '\t\t\t重要性: %4.3f' % (variable_importance[i][1]), 'result.txt')
         # ? 保存模型
         self.classifier = clf
-        print("----------------------------")
-        print("------>>> 训练模型结束 <<<------")
+        iprint('----------------------------', 'result.txt')
+        iprint('------>>> 训练模型结束 <<<------', 'result.txt')
 
     def predict(self, predict_answers):
-        #print("------>>> 预测结果如下 <<<------")
         predict_keywords_count = self.get_keyword_counts(
             self.top_words, [predict_answers])
         predict_data = self.get_answers_len([predict_answers])
@@ -146,6 +144,18 @@ class Aita:
 
 
 # ! Trainer Definition End
+
+from datetime import datetime
+def iprint(s, fname):
+    f = open(fname, 'a')
+    curr_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+    s = '[' + curr_time + ']: ' + s
+    if not '\n' in s:
+        s += '\n'
+    f.write(s)
+    f.close()
+    print('%s' % (s.strip()))
+
 
 def test():
     # ? 测试模型，使用自带的回答
@@ -159,23 +169,23 @@ def test():
     rss = 0
     residuals = []
     pred_val = [] # save predicted values for computing quantiles
-    print('No\tTrue value\tPredicted Value\tDifference')
+    iprint('No\tTrue value\tPredicted Value\tDifference', 'result.txt')
     for i in range(len(predict_main)):
         predict_res = aita.predict(predict_main[i])
-        print('%d\t%4.2f\t%4.2f\t%4.2f' % (i+1, predict_true_score[i], predict_res, predict_res-predict_true_score[i]))
+        iprint('%d\t%4.2f\t%4.2f\t%4.2f' % (i+1, predict_true_score[i], predict_res, predict_res-predict_true_score[i]), 'result.txt')
         residuals.append((predict_true_score[i] - predict_res))
         rss += (predict_true_score[i] - predict_res) ** 2
         total_absolute_diff += abs(predict_true_score[i] - predict_res)
         pred_val.append(predict_res)
     mse = rss / len(predict_main)
-    print('---------------------------------------------------------------')
-    print('Mean Absolute Error (MAE): %4.5f' % (total_absolute_diff / len(predict_main)))
-    print('Mean Squared Error (MSE): %4.5f' % (mse))
-    print(' 5th quantile: %4.2f' % (np.quantile(pred_val, 0.05)))    
-    print('25th quantile: %4.2f' % (np.quantile(pred_val, 0.25)))
-    print('50th quantile: %4.2f' % (np.quantile(pred_val, 0.50)))
-    print('75th quantile: %4.2f' % (np.quantile(pred_val, 0.75)))    
-    print('95th quantile: %4.2f' % (np.quantile(pred_val, 0.95)))
+    iprint('---------------------------------------------------------------', 'result.txt')
+    iprint('平均绝对误差: %4.5f' % (total_absolute_diff / len(predict_main)), 'result.txt')
+    iprint('Mean Squared Error (MSE): %4.5f' % (mse), 'result.txt')
+    iprint(' 5th quantile: %4.2f' % (np.quantile(pred_val, 0.05)), 'result.txt')
+    iprint('25th quantile: %4.2f' % (np.quantile(pred_val, 0.25)), 'result.txt')
+    iprint('50th quantile: %4.2f' % (np.quantile(pred_val, 0.50)), 'result.txt')
+    iprint('75th quantile: %4.2f' % (np.quantile(pred_val, 0.75)), 'result.txt')    
+    iprint('95th quantile: %4.2f' % (np.quantile(pred_val, 0.95)), 'result.txt')
     
     # 下面都是画图的
     '''
