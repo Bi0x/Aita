@@ -2,7 +2,7 @@
 
 Artificial Intelligence Teaching Assistant (AI Course Project)
 
-Author: 余天祥  (bi0x at foxmail.com)
+Author: 俞天翔  (bi0x at foxmail.com)
 
 The author uses **Random Forests** to predict the grade of an essay.
 Each essay focus on a open-ended question.  The author uses the word
