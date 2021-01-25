@@ -5,11 +5,11 @@
 [![Scikit-learn](https://img.shields.io/badge/SKLearn-0.23.2-orange.svg?style=flat-square)](https://scikit-learn.org/stable/)
 
 
-Artificial Intelligence Teaching Assistant (AI Course Project)
+- Artificial Intelligence Teaching Assistant (AI Course Project)
 
-Author: 俞天翔  (bi0x at foxmail.com)
+> Author: Bi0x  (bi0x@foxmail.com)
 
-The author uses **Random Forests** to predict the grade of an essay.
-Each essay focus on a open-ended question.  The author uses the word
-frequencies as predictor variables.  The candidate words are selected
-by a python module called *jieba*.
+1. Uses **Random Forests** to predict the grade of an essay.
+2. Each essay focus on a open-ended question.  
+3. Uses the word frequencies as predictor variables. 
+4. The candidate words are selected by a python module called *jieba*.
